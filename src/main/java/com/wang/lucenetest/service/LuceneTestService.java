@@ -19,9 +19,11 @@ public interface LuceneTestService {
 
 	void addIndex(String index);
 
-	void delete(Long docId);
+	long delete(String field) throws IOException;
 
 	void deleteByQuery(String query);
 
 	void update(Long docId, Document document);
+
+	void optimize() throws IOException;
 }

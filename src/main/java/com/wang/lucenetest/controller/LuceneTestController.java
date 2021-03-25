@@ -11,6 +11,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,32 +31,27 @@ public class LuceneTestController {
 
 	@GetMapping("/add")
 	public String add() throws IOException {
-		Document document = new Document();
-		Field field1 = new TextField("key", "value", Field.Store.NO);
-		Field field2 = new DoubleDocValuesField("key2", 3.14D);
-		Field field3 = new StringField("long type", "123", Field.Store.NO);
-		document.add(field1);
-		document.add(field2);
-		document.add(field3);
-		Document document2 = new Document();
-		Field field4 = new TextField("key", "has value", Field.Store.NO);
-		Field field5 = new DoubleDocValuesField("key2", 6.28D);
-		Field field6 = new StringField("long type", "456", Field.Store.NO);
-		document2.add(field4);
-		document2.add(field5);
-		document2.add(field6);
-		luceneTestService.add(document2);
-		luceneTestService.add(document);
+		luceneTestService.add(null);
 		return "ok";
 	}
 
-	@GetMapping("/search")
-	public String search() throws IOException, ParseException {
-		return objectMapper.writeValueAsString(luceneTestService.read(""));
+	@GetMapping("/search/{value}")
+	public String search(@PathVariable String value) throws IOException, ParseException {
+		return objectMapper.writeValueAsString(luceneTestService.read(value));
 	}
 
 	@GetMapping("count")
 	public int count() throws IOException, ParseException {
 		return luceneTestService.count();
+	}
+
+	@GetMapping("/delete/{value}")
+	public long delete(@PathVariable String value) throws IOException {
+		return luceneTestService.delete(value);
+	}
+
+	@GetMapping("/op")
+	public void op() throws IOException {
+		luceneTestService.optimize();
 	}
 }
