@@ -137,6 +137,7 @@ class LuceneTestServiceImplTest {
 			 */
 			SuggestField suggest_field = new SuggestField("suggest_field", "suggest" + Math.random(), 199);
 
+			document.add(suggest_field);
 			document.add(text_field);
 			document.add(text_field_no_store);
 			document.add(string_field);
@@ -145,7 +146,6 @@ class LuceneTestServiceImplTest {
 			document.add(double_range_doc_values_field);
 			document.add(double_point);
 			document.add(feature_field);
-			document.add(suggest_field);
 
 			documentList.add(document);
 		}
@@ -188,7 +188,7 @@ class LuceneTestServiceImplTest {
 		/**
 		 * add documents
 		 */
-		// luceneTestServiceImplTest.add(indexWriter);
+		luceneTestServiceImplTest.add(indexWriter);
 		/**
 		 * query documents
 		 */
@@ -200,7 +200,7 @@ class LuceneTestServiceImplTest {
 		/**
 		 * suggest
 		 */
-		luceneTestServiceImplTest.suggest();
+		// luceneTestServiceImplTest.suggest();
 
 		// indexReader.close();
 	}
