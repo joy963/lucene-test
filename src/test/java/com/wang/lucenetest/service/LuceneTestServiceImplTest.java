@@ -174,16 +174,20 @@ class LuceneTestServiceImplTest {
 		indexWriter.deleteDocuments(query);
 	}
 
+	void merge(IndexWriter indexWriter) throws IOException {
+		indexWriter.forceMerge(2);
+	}
+
 	public static void main(String[] args) throws IOException {
 		IndexWriterConfig conf = new IndexWriterConfig(new CompletionAnalyzer(new StandardAnalyzer()));
 		conf.setCodec(Codec.getDefault());
-		conf.setUseCompoundFile(false);
+		// conf.setUseCompoundFile(true);
 		conf.setRAMBufferSizeMB(100);
 		conf.setMaxBufferedDocs(100);
-		Directory fsDirectory = new NIOFSDirectory(Path.of("E:\\lucene_index\\test.index"));
+		Directory fsDirectory = NIOFSDirectory.open(Path.of("E:\\lucene_index\\test.index"));
 		IndexWriter indexWriter = new IndexWriter(fsDirectory, conf);
-		IndexReader indexReader = DirectoryReader.open(fsDirectory);
-		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+		// IndexReader indexReader = DirectoryReader.open(fsDirectory);
+		// IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 		LuceneTestServiceImplTest luceneTestServiceImplTest = new LuceneTestServiceImplTest();
 		/**
 		 * add documents
@@ -203,5 +207,6 @@ class LuceneTestServiceImplTest {
 		// luceneTestServiceImplTest.suggest();
 
 		// indexReader.close();
+		indexWriter.close();
 	}
 }
