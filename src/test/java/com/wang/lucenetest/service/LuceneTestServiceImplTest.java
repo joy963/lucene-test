@@ -18,13 +18,16 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.DoubleRangeDocValuesField;
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanClause;
@@ -57,6 +60,26 @@ import org.springframework.util.StopWatch;
  * @since JDK 11
  */
 class LuceneTestServiceImplTest {
+	private static class VectorField extends Field {
+		public static final FieldType fieldType = new FieldType();
+
+		static {
+			fieldType.setStored(true);
+			IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+			fieldType.setIndexOptions(indexOptions);
+			fieldType.setStoreTermVectors(true);
+			fieldType.setStoreTermVectorPositions(true);
+			fieldType.setStoreTermVectorOffsets(true);
+			fieldType.setStoreTermVectorPayloads(true);
+			fieldType.setTokenized(true);
+			fieldType.freeze();
+
+		}
+
+		public VectorField(String name, CharSequence value) {
+			super(name, value, fieldType);
+		}
+	}
 
 	void query(IndexSearcher indexSearcher, IndexReader indexReader) throws IOException {
 		StopWatch stopWatch = new StopWatch();
@@ -104,6 +127,12 @@ class LuceneTestServiceImplTest {
 		List<Document> documentList = new ArrayList<>();
 		for (int i = 0; i < 1000000; i++) {
 			Document document = new Document();
+
+			/**
+			 * vector field
+			 */
+
+			Field field_vector = new VectorField("field_vector", "vector value" + i);
 			/**
 			 * text type
 			 */
@@ -137,6 +166,7 @@ class LuceneTestServiceImplTest {
 			 */
 			SuggestField suggest_field = new SuggestField("suggest_field", "suggest" + Math.random(), 199);
 
+			document.add(field_vector);
 			document.add(suggest_field);
 			document.add(text_field);
 			document.add(text_field_no_store);
@@ -181,7 +211,7 @@ class LuceneTestServiceImplTest {
 	public static void main(String[] args) throws IOException {
 		IndexWriterConfig conf = new IndexWriterConfig(new CompletionAnalyzer(new StandardAnalyzer()));
 		conf.setCodec(Codec.getDefault());
-		// conf.setUseCompoundFile(true);
+		conf.setUseCompoundFile(false);
 		conf.setRAMBufferSizeMB(100);
 		conf.setMaxBufferedDocs(100);
 		Directory fsDirectory = NIOFSDirectory.open(Path.of("E:\\lucene_index\\test.index"));
