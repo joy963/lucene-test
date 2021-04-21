@@ -81,14 +81,14 @@ class LuceneTestServiceImplTest {
 		}
 	}
 
-	void query(IndexSearcher indexSearcher, IndexReader indexReader) throws IOException {
+	void query(IndexSearcher indexSearcher) throws IOException {
 		StopWatch stopWatch = new StopWatch();
 		/**
 		 * term query
 		 */
-		Term term = new Term("text_field", "store");
-		Query termQuery = new TermQuery(term);
+		Term term = new Term("text_field", "text value with store ");
 		stopWatch.start("term query");
+		Query termQuery = new TermQuery(term);
 		TopDocs topDocs = indexSearcher.search(termQuery, 10000);
 		ScoreDoc[] termResult = topDocs.scoreDocs;
 		System.out.println(termResult.length);
@@ -97,35 +97,43 @@ class LuceneTestServiceImplTest {
 		}
 		stopWatch.stop();
 		/**
+		 * wild query
+		 */
+		Term termwild = new Term("string_field", "string value with store**");
+		Query query = new WildcardQuery(termwild);
+		TopDocs wildtop = indexSearcher.search(query, 100);
+		ScoreDoc[] scoreDocs = wildtop.scoreDocs;
+		System.out.println(scoreDocs.length);
+		/**
 		 * future
 		 */
-		stopWatch.start("future query");
-		Query futureQuery = FeatureField.newSaturationQuery("future_field", "future_name");
-		topDocs = indexSearcher.search(futureQuery, 10000);
-		ScoreDoc[] futureResult = topDocs.scoreDocs;
-		System.out.println(futureResult.length);
-		stopWatch.stop();
+		// stopWatch.start("future query");
+		// Query futureQuery = FeatureField.newSaturationQuery("future_field", "future_name");
+		// topDocs = indexSearcher.search(futureQuery, 10000);
+		// ScoreDoc[] futureResult = topDocs.scoreDocs;
+		// System.out.println(futureResult.length);
+		// stopWatch.stop();
 
 		/**
 		 * suggest
 		 */
-		stopWatch.start("suggest query");
-		SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(indexReader);
-		term = new Term("suggest_field", "suggest");
-		CompletionQuery completionQuery = new PrefixCompletionQuery(new StandardAnalyzer(), term);
-		TopSuggestDocs topSuggestDocs = suggestIndexSearcher.suggest(completionQuery, 10000, true);
-		stopWatch.stop();
-		TopSuggestDocs.SuggestScoreDoc[] suggestScoreDocs = topSuggestDocs.scoreLookupDocs();
-		System.out.println(suggestScoreDocs.length);
-		ScoreDoc[] scoreDocs = topSuggestDocs.scoreDocs;
-		System.out.println(scoreDocs.length);
+		// stopWatch.start("suggest query");
+		// SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(indexReader);
+		// term = new Term("text_field", "no");
+		// CompletionQuery completionQuery = new PrefixCompletionQuery(new StandardAnalyzer(), term);
+		// TopSuggestDocs topSuggestDocs = suggestIndexSearcher.suggest(completionQuery, 10000, true);
+		// stopWatch.stop();
+		// TopSuggestDocs.SuggestScoreDoc[] suggestScoreDocs = topSuggestDocs.scoreLookupDocs();
+		// System.out.println(suggestScoreDocs.length);
+		// ScoreDoc[] scoreDocs = topSuggestDocs.scoreDocs;
+		// System.out.println(scoreDocs.length);
 
 		System.out.println(stopWatch.prettyPrint());
 	}
 
 	void add(IndexWriter indexWriter) throws IOException {
 		List<Document> documentList = new ArrayList<>();
-		for (int i = 0; i < 1000000; i++) {
+		for (int i = 0; i < 10; i++) {
 			Document document = new Document();
 
 			/**
@@ -137,16 +145,20 @@ class LuceneTestServiceImplTest {
 			 * text type
 			 */
 			TextField text_field = new TextField("text_field", "text value with store " + Math.random(), Field.Store.YES);
+			TextField text_field2 = new TextField("text_field", "text2 value2 with2 store2 " + Math.random(), Field.Store.YES);
 			TextField text_field_no_store = new TextField("text_field_no_store", "text value no store " + Math.random(), Field.Store.NO);
 			/**
 			 * string type
 			 */
 			StringField string_field = new StringField("string_field", "string value with store" + Math.random(), Field.Store.YES);
+			StringField string_field2 = new StringField("string_field", "string2 value2 with2 store2" + Math.random(), Field.Store.YES);
+
 			StringField string_field_no_store = new StringField("string_field", "string value no store" + Math.random(), Field.Store.NO);
 			/**
 			 * doc values: double
 			 */
 			DoubleDocValuesField doc_value_field = new DoubleDocValuesField("doc_value_field", Math.random());
+			DoubleDocValuesField doc_value_field2 = new DoubleDocValuesField("doc_value_field", Math.random() + 1);
 			/**
 			 * doc range value type
 			 */
@@ -170,9 +182,11 @@ class LuceneTestServiceImplTest {
 			document.add(suggest_field);
 			document.add(text_field);
 			document.add(text_field_no_store);
+			document.add(text_field2);
 			document.add(string_field);
 			document.add(string_field_no_store);
 			document.add(doc_value_field);
+			document.add(string_field2);
 			document.add(double_range_doc_values_field);
 			document.add(double_point);
 			document.add(feature_field);
@@ -184,7 +198,6 @@ class LuceneTestServiceImplTest {
 		indexWriter.addDocuments(documentList);
 		stopWatch.stop();
 		System.out.println(stopWatch.prettyPrint());
-		indexWriter.close();
 	}
 
 	void suggest() throws IOException {
@@ -209,24 +222,26 @@ class LuceneTestServiceImplTest {
 	}
 
 	public static void main(String[] args) throws IOException {
-		IndexWriterConfig conf = new IndexWriterConfig(new CompletionAnalyzer(new StandardAnalyzer()));
+		IndexWriterConfig conf = new IndexWriterConfig(new StandardAnalyzer());
 		conf.setCodec(Codec.getDefault());
 		conf.setUseCompoundFile(false);
 		conf.setRAMBufferSizeMB(100);
 		conf.setMaxBufferedDocs(100);
 		Directory fsDirectory = NIOFSDirectory.open(Path.of("E:\\lucene_index\\test.index"));
 		IndexWriter indexWriter = new IndexWriter(fsDirectory, conf);
-		// IndexReader indexReader = DirectoryReader.open(fsDirectory);
-		// IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 		LuceneTestServiceImplTest luceneTestServiceImplTest = new LuceneTestServiceImplTest();
 		/**
 		 * add documents
 		 */
 		luceneTestServiceImplTest.add(indexWriter);
+		indexWriter.commit();
+		indexWriter.close();
 		/**
 		 * query documents
 		 */
-		// luceneTestServiceImplTest.query(indexSearcher, indexReader);
+		IndexReader indexReader = DirectoryReader.open(fsDirectory);
+		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+		luceneTestServiceImplTest.query(indexSearcher);
 		/**
 		 * delete documents
 		 */
@@ -236,7 +251,6 @@ class LuceneTestServiceImplTest {
 		 */
 		// luceneTestServiceImplTest.suggest();
 
-		// indexReader.close();
-		indexWriter.close();
+		indexReader.close();
 	}
 }
